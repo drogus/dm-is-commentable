@@ -57,12 +57,13 @@ module DataMapper
           :body       => { :type => DataMapper::Types::Text, :nullable => false },
           :rateable   => false,
           :as         => nil,
-          :class_name => "#{self}Comment"
+          :class_name => "#{self}Comment",
+          :blog_style => true
         }.merge(options)
         
         # allow non togglable ratings
         @comments_rateable = options[:rateable]
-        
+
         @commentable_class_name = options[:class_name]        
         class_inheritable_accessor :commentable_class_name        
         
@@ -95,7 +96,7 @@ module DataMapper
 
         # block for enhance gets class_eval'ed in remixable scope
         commenting_rateable = self.commenting_rateable?
-        
+
         enhance :comment, @commentable_class_name do
           
           property c_name, c_type, c_property_opts # commenter
@@ -107,6 +108,11 @@ module DataMapper
             is :rateable, options[:rateable].is_a?(Hash) ? options[:rateable] : {}
           end
         
+          if options[:blog_style]
+            property :name, String
+            property :email, String
+            property :site, String
+          end
         end
         
       end
