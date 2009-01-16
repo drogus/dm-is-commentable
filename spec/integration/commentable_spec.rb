@@ -76,6 +76,11 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
   
     describe "every commentable", :shared => true do
 
+      it "should define blog_style_comments? class and instance methods" do
+        Trip.new.respond_to?(:blog_style_comments?).should be_true
+        Trip.respond_to?(:blog_style_comments?).should be_true
+      end
+
       it "should return class of comments model" do
         Trip.new.respond_to?(:commentable_class).should be_true
         Trip.new.commentable_class.should == TripComment
@@ -431,6 +436,34 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
       end
 
     end
+
+    describe "every commentable that allows blog_style_comments", :shared => true do
+
+      it "should return true when 'blog_style_comments?' is called" do
+        @t1.blog_style_comments?.should be_true
+      end
+
+      it "should add name, email and site properties to comments" do
+        TripComment.properties.has_property?(:name).should be_true
+        TripComment.properties.has_property?(:email).should be_true
+        TripComment.properties.has_property?(:site).should be_true
+      end
+
+    end
+
+    describe "every commentable with blog_style_comments disabled", :shared => true do
+
+      it "should return false when 'blog_style_comments?' is called" do
+        @t1.blog_style_comments?.should be_false
+      end
+
+      it "should not add name, email and site properties to comments" do
+        TripComment.properties.has_property?(:name).should be_false
+        TripComment.properties.has_property?(:email).should be_false
+        TripComment.properties.has_property?(:site).should be_false
+      end
+
+    end
     
     
     # --------------------------------------------------------------------------------------------------
@@ -478,6 +511,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
       it_should_behave_like "every commentable that allows personalized comments"
       it_should_behave_like "every commentable that doesn't allow comment ratings"
       it_should_behave_like "every commentable that has no alias on the comments association"
+      it_should_behave_like "every commentable that allows blog_style_comments"
     
     end
 
@@ -529,7 +563,8 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
     # --------------------------------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------------------
       
-    describe "Trip.is(:commentable) with properties :comments_enabled, :anonymous_comments_enabled, :comment_ratings_enabled" do
+    describe "Trip.is(:commentable) with properties :comments_enabled, :anonymous_comments_enabled, :comment_ratings_enabled 
+                  and blog_style_comments disabled" do
       
       before do
         
@@ -548,7 +583,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
           property :anonymous_commenting_enabled, Boolean, :nullable => false, :default => true
           property :rateable_commenting_enabled,  Boolean, :nullable => false, :default => true
           
-          is :commentable
+          is :commentable, :blog_style_comments => false
         end
         
         User.auto_migrate!
@@ -574,7 +609,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
       it_should_behave_like "every commentable that allows personalized comments"
       it_should_behave_like "every commentable that allows comment ratings"
       it_should_behave_like "every commentable that has no alias on the comments association"
-      
+      it_should_behave_like "every commentable with blog_style_comments disabled"
     end
   
   end

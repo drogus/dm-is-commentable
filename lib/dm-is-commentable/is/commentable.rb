@@ -58,9 +58,11 @@ module DataMapper
           :rateable   => false,
           :as         => nil,
           :class_name => "#{self}Comment",
-          :blog_style => true
+          :blog_style_comments => true
         }.merge(options)
-        
+       
+        @blog_style_comments = options[:blog_style_comments]
+
         # allow non togglable ratings
         @comments_rateable = options[:rateable]
 
@@ -97,8 +99,10 @@ module DataMapper
         # block for enhance gets class_eval'ed in remixable scope
         commenting_rateable = self.commenting_rateable?
 
+        blog_style_comments = self.blog_style_comments?
+
         enhance :comment, @commentable_class_name do
-          
+
           property c_name, c_type, c_property_opts # commenter
           property b_name, b_type, b_property_opts # body
           
@@ -108,7 +112,7 @@ module DataMapper
             is :rateable, options[:rateable].is_a?(Hash) ? options[:rateable] : {}
           end
         
-          if options[:blog_style]
+          if options[:blog_style_comments]
             property :name, String
             property :email, String
             property :site, String
@@ -134,6 +138,11 @@ module DataMapper
         def commenting_rateable?
           rateable_commenting_togglable? || @comments_rateable
         end
+
+        def blog_style_comments?
+          @blog_style_comments
+        end
+
         
       end
   
@@ -145,6 +154,10 @@ module DataMapper
         
         def commenting_rateable?
           self.class.commenting_rateable?
+        end
+
+        def blog_style_comments?
+          self.class.blog_style_comments?
         end
              
         def commenting_togglable?
@@ -171,7 +184,6 @@ module DataMapper
         def rateable_commenting_enabled?
           (rateable_commenting_togglable? && attribute_get(:rateable_commenting_enabled)) || commenting_rateable?
         end
-        
         
         # convenience method
         def commenting_disabled?
