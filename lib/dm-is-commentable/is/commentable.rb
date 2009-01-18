@@ -20,6 +20,9 @@ module DataMapper
         property :created_at, DateTime
         property :updated_at, DateTime
         
+        def commenting_user?
+          !user.nil?
+        end
       end
       
       
@@ -58,7 +61,7 @@ module DataMapper
           :rateable   => false,
           :as         => nil,
           :class_name => "#{self}Comment",
-          :blog_style_comments => true
+          :blog_style_comments => false
         }.merge(options)
        
         @blog_style_comments = options[:blog_style_comments]
@@ -112,10 +115,13 @@ module DataMapper
             is :rateable, options[:rateable].is_a?(Hash) ? options[:rateable] : {}
           end
         
-          if options[:blog_style_comments]
+          if blog_style_comments
             property :name, String
             property :email, String
             property :site, String
+
+            validates_present :name, :unless => :commenting_user?
+            validates_present :email, :unless => :commenting_user?
           end
         end
         
@@ -250,7 +256,6 @@ module DataMapper
         def valid_commenting_user?(user)
           user.nil? ? self.anonymous_commenting_enabled? : true
         end
-        
         
         def comment(body, user = nil)
           if self.commenting_enabled?

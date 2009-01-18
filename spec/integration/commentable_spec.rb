@@ -127,8 +127,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
       it "should respond_to?(:valid_commenting_user?)" do
         @t1.respond_to?(:valid_commenting_user?).should be_true
       end
-            
-      
+
       it "should respond_to?(:comments)" do
         @t1.respond_to?(:comments).should be_true
       end
@@ -437,81 +436,94 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
 
     end
 
-    describe "every commentable that allows blog_style_comments", :shared => true do
+      describe "every commentable with blog_style_comments enabled", :shared => true do
 
-      it "should return true when 'blog_style_comments?' is called" do
-        @t1.blog_style_comments?.should be_true
+        it "should return true when 'blog_style_comments?' is called" do
+          @t1.blog_style_comments?.should be_true
+        end
+
+        it "should add name, email and site properties to comments" do
+          TripComment.properties.has_property?(:name).should be_true
+          TripComment.properties.has_property?(:email).should be_true
+          TripComment.properties.has_property?(:site).should be_true
+        end
+
+        it "should not be valid  without given name or email address as anonymous comment " do
+          @t1.comments.new(:body => SHORT_COMMENT, :user => nil).valid?.should_not be_true
+          @t1.comments.new(:body => SHORT_COMMENT, :name => "Name").valid?.should_not be_true
+          @t1.comments.new(:body => SHORT_COMMENT, :email => "foo@bar.com").valid?.should_not be_true
+        end
+
+        it "should be valid with given name and email" do
+          @t1.comments.new(:body => SHORT_COMMENT, 
+                           :user => nil,
+                           :name => "Name",
+                           :email => "foo@bar.com").valid?.should be_true
+        end
+
       end
 
-      it "should add name, email and site properties to comments" do
-        TripComment.properties.has_property?(:name).should be_true
-        TripComment.properties.has_property?(:email).should be_true
-        TripComment.properties.has_property?(:site).should be_true
+      describe "every commentable with blog_style_comments disabled", :shared => true do
+
+        it "should return false when 'blog_style_comments?' is called" do
+          @t1.blog_style_comments?.should be_false
+        end
+
+        it "should not add name, email and site properties to comments" do
+          TripComment.properties.has_property?(:name).should be_false
+          TripComment.properties.has_property?(:email).should be_false
+          TripComment.properties.has_property?(:site).should be_false
+        end
+
       end
-
-    end
-
-    describe "every commentable with blog_style_comments disabled", :shared => true do
-
-      it "should return false when 'blog_style_comments?' is called" do
-        @t1.blog_style_comments?.should be_false
-      end
-
-      it "should not add name, email and site properties to comments" do
-        TripComment.properties.has_property?(:name).should be_false
-        TripComment.properties.has_property?(:email).should be_false
-        TripComment.properties.has_property?(:site).should be_false
-      end
-
-    end
-    
-    
-    # --------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------------------------------
-    # --------------------------------------------------------------------------------------------------
-    
-    
-    describe "Trip.is(:commentable) without additional properties" do
-    
-      before do
       
-        unload_commenting_infrastructure "Trip", "User"
+      
+      # --------------------------------------------------------------------------------------------------
+      # --------------------------------------------------------------------------------------------------
+      # --------------------------------------------------------------------------------------------------
+      # --------------------------------------------------------------------------------------------------
+      
+      
+      describe "Trip.is(:commentable) without additional properties" do
+      
+        before do
         
-        class User
-          include DataMapper::Resource
-          property :id, Serial
+          unload_commenting_infrastructure "Trip", "User"
+          
+          class User
+            include DataMapper::Resource
+            property :id, Serial
+          end
+        
+          class Trip
+            include DataMapper::Resource
+            
+            property :id, Serial
+            
+            is :commentable
+          end
+          
+          User.auto_migrate!
+          Trip.auto_migrate!
+          TripComment.auto_migrate!
+
+          @u1 = User.create(:id => 1)
+          @u2 = User.create(:id => 2)
+          @t1 = Trip.create(:id => 1)
+          @t2 = Trip.create(:id => 2)
+        
         end
       
-        class Trip
-          include DataMapper::Resource
-          
-          property :id, Serial
-          
-          is :commentable
-        end
-        
-        User.auto_migrate!
-        Trip.auto_migrate!
-        TripComment.auto_migrate!
-
-        @u1 = User.create(:id => 1)
-        @u2 = User.create(:id => 2)
-        @t1 = Trip.create(:id => 1)
-        @t2 = Trip.create(:id => 2)
-      
-      end
-    
-      it_should_behave_like "every commentable"
-      it_should_behave_like "every commentable with comments enabled"
-      it_should_behave_like "every commentable for which comments can't be (de)activated"
-      it_should_behave_like "every commentable for which anonymity can't be (de)activated"
-      it_should_behave_like "every commentable for which ratings can't be (de)activated"
-      it_should_behave_like "every commentable that allows anonymous comments"
-      it_should_behave_like "every commentable that allows personalized comments"
-      it_should_behave_like "every commentable that doesn't allow comment ratings"
-      it_should_behave_like "every commentable that has no alias on the comments association"
-      it_should_behave_like "every commentable that allows blog_style_comments"
+        it_should_behave_like "every commentable"
+        it_should_behave_like "every commentable with comments enabled"
+        it_should_behave_like "every commentable for which comments can't be (de)activated"
+        it_should_behave_like "every commentable for which anonymity can't be (de)activated"
+        it_should_behave_like "every commentable for which ratings can't be (de)activated"
+        it_should_behave_like "every commentable that allows anonymous comments"
+        it_should_behave_like "every commentable that allows personalized comments"
+        it_should_behave_like "every commentable that doesn't allow comment ratings"
+        it_should_behave_like "every commentable that has no alias on the comments association"
+        it_should_behave_like "every commentable with blog_style_comments disabled"
     
     end
 
@@ -564,7 +576,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
     # --------------------------------------------------------------------------------------------------
       
     describe "Trip.is(:commentable) with properties :comments_enabled, :anonymous_comments_enabled, :comment_ratings_enabled 
-                  and blog_style_comments disabled" do
+                  disabled" do
       
       before do
         
@@ -583,7 +595,7 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
           property :anonymous_commenting_enabled, Boolean, :nullable => false, :default => true
           property :rateable_commenting_enabled,  Boolean, :nullable => false, :default => true
           
-          is :commentable, :blog_style_comments => false
+          is :commentable
         end
         
         User.auto_migrate!
@@ -609,9 +621,52 @@ if HAS_SQLITE3 || HAS_MYSQL || HAS_POSTGRES
       it_should_behave_like "every commentable that allows personalized comments"
       it_should_behave_like "every commentable that allows comment ratings"
       it_should_behave_like "every commentable that has no alias on the comments association"
-      it_should_behave_like "every commentable with blog_style_comments disabled"
     end
-  
+
+    describe "Trip.is(:commentable, :blog_style_comments => true)" do
+    
+      before do
+      
+        unload_commenting_infrastructure "Trip", "User"
+        
+        class User
+          include DataMapper::Resource
+          property :id, Serial
+        end
+      
+        class Trip
+          include DataMapper::Resource
+          
+          property :id, Serial
+          
+          is :commentable, :blog_style_comments => true
+        end
+        
+        User.auto_migrate!
+        Trip.auto_migrate!
+        TripComment.auto_migrate!
+
+        @u1 = User.create(:id => 1)
+        @u2 = User.create(:id => 2)
+        @t1 = Trip.create(:id => 1)
+        @t2 = Trip.create(:id => 2)
+      
+      end
+    
+      it_should_behave_like "every commentable"
+      it_should_behave_like "every commentable with comments enabled"
+      it_should_behave_like "every commentable for which comments can't be (de)activated"
+      it_should_behave_like "every commentable for which anonymity can't be (de)activated"
+      it_should_behave_like "every commentable for which ratings can't be (de)activated"
+      it_should_behave_like "every commentable that allows anonymous comments"
+      it_should_behave_like "every commentable that allows personalized comments"
+      it_should_behave_like "every commentable that doesn't allow comment ratings"
+      it_should_behave_like "every commentable that has no alias on the comments association"
+      it_should_behave_like "every commentable with blog_style_comments enabled"
+    
+    end
+
+
   end
   
 end
